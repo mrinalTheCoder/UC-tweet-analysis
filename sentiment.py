@@ -21,15 +21,20 @@ for i in range(len(data)):
 classifier = pipeline("sentiment-analysis")
 result = classifier([data[i]['text'] for i in range(len(data))])
 
-pos,neg = 0, 0
+pos, neg = 0, 0
+pos_results = []
 for i in range(len(data)):
 	temp = result[i]
 	temp['text'] = data[i]['text']
 	temp['id'] = data[i]['id']
 	if temp['label'] == 'POSITIVE':
-		print(temp)
+		pos_results.append(temp)
 	pos += int(temp['label'] == 'POSITIVE')
 	neg += int(not temp['label'] == 'POSITIVE')
 
+# sort in descending order of positivity score
+pos_results = sorted(pos_results, reverse=True, key=lambda x:x['score'])
+for i in pos_results:
+	print(i)
 print()
 print(f"{pos} positive tweets and {neg} negative tweets")
