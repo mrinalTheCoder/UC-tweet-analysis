@@ -19,6 +19,7 @@ for i in range(len(data)):
 	data[i]['text'] = ' '.join(new_l)
 
 classifier = pipeline("sentiment-analysis")
+
 result = classifier([data[i]['text'] for i in range(len(data))])
 
 pos, neg = 0, 0
@@ -27,6 +28,7 @@ for i in range(len(data)):
 	temp = result[i]
 	temp['text'] = data[i]['text']
 	temp['id'] = data[i]['id']
+	temp['author'] = data[i]['author_id']
 	if temp['label'] == 'POSITIVE':
 		pos_results.append(temp)
 	pos += int(temp['label'] == 'POSITIVE')
