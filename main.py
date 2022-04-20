@@ -2,6 +2,9 @@ import twitter_search as ts
 import sentiment
 import requests
 
+with open('HF_BEARER_TOKEN') as f:
+	bearer = f.read()
+
 SENTENCE_SIMILARITY = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
 headers = {"Authorization": bearer}
 
@@ -16,10 +19,6 @@ q_params = {'inputs': {
 	'source_sentence': 'The service was excellent. The person was polite and professional',
 	'sentences': [i['text'] for i in pos]
 }}
-#sarcasm_q = {'inputs': {
-#	'source_sentence': 'Bad customer care. Amazing!',
-#	'sentences': [i['text'] for i in pos]
-#}}
 
 sarcasm_q = {'inputs': {
 	'source_sentence': "Very happy with UC's terrible customer care.",

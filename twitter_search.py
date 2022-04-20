@@ -2,23 +2,17 @@ import requests
 import copy
 import json
 
-# To set your environment variables in your terminal run the following line:
-# export 'BEARER_TOKEN'='<your_bearer_token>'
-bearer_token = bearer_token
+with open('TWITTER_BEARER_TOKEN') as f:
+	bearer_token = f.read()
 
 num_results = 100
 search_url = "https://api.twitter.com/2/tweets/search/recent/?max_results="+str(num_results)
 user_url = "https://api.twitter.com/2/users/"
 
-# Optional params: start_time,end_time,since_id,until_id,max_results,next_token,
-# expansions,tweet.fields,media.fields,poll.fields,place.fields,user.fields
 query_params = {'query': '@urbancompany_UC -is:reply -is:retweet -from:urbancompany_UC -from:UC_Assist', 'tweet.fields': 'author_id'}
 
+#Method required by bearer token authentication.
 def bearer_oauth(r):
-	"""
-	Method required by bearer token authentication.
-	"""
-
 	r.headers["Authorization"] = f"Bearer {bearer_token}"
 	r.headers["User-Agent"] = "v2RecentSearchPython"
 	return r

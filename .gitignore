@@ -3,3 +3,5 @@
 __pycache__
 tweets.txt
 *.swp
+TWITTER_BEARER_TOKEN
+HF_BEARER_TOKEN
