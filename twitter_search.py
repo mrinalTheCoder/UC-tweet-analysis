@@ -31,7 +31,10 @@ def connect_to_endpoint(url, params):
 	return response.json()
 
 def get_tweets():
-	return connect_to_endpoint(search_url, query_params)
+	out = connect_to_endpoint(search_url, query_params)
+	with open('tweets.txt', 'w') as f:
+		json.dump(out, f)
+	return out
 
 def filter_uc(tweets):
 	out = []
