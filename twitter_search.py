@@ -2,9 +2,6 @@ import requests
 import copy
 import json
 
-with open('TWITTER_BEARER_TOKEN') as f:
-	bearer_token = f.read()
-
 num_results = 100
 search_url = "https://api.twitter.com/2/tweets/search/recent/?max_results="+str(num_results)
 user_url = "https://api.twitter.com/2/users/"
@@ -17,15 +14,20 @@ def bearer_oauth(r):
 	r.headers["User-Agent"] = "v2RecentSearchPython"
 	return r
 
-def connect_to_endpoint(url, params):
+def connect_to_endpoint(url, params, bearer_token):
+	def bearer_oauth(r):
+		r.headers["Authorization"] = f"Bearer {bearer_token}"
+		r.headers["User-Agent"] = "v2RecentSearchPython"
+		return r
+	
 	response = requests.get(url, auth=bearer_oauth, params=params)
 	print(response.status_code)
 	if response.status_code != 200:
 		raise Exception(response.status_code, response.text)
 	return response.json()
 
-def get_tweets():
-	out = connect_to_endpoint(search_url, query_params)
+def get_tweets(bearer):
+	out = connect_to_endpoint(search_url, query_params, bearer)
 	with open('tweets.txt', 'w') as f:
 		json.dump(out, f)
 	return out

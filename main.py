@@ -2,17 +2,17 @@ import twitter_search as ts
 import sentiment
 import requests
 
-with open('HF_BEARER_TOKEN') as f:
-	bearer = f.read()
+with open('BEARER_TOKENS') as f:
+	twitter_bearer, hf_bearer = f.read().split('\n')[:-1]
 
 SENTENCE_SIMILARITY = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
-headers = {"Authorization": bearer}
+headers = {"Authorization": hf_bearer}
 
 def query(payload):
 	response = requests.post(SENTENCE_SIMILARITY, headers=headers, json=payload)
 	return response.json()
 
-data = ts.get_tweets()['data']
+data = ts.get_tweets(twitter_bearer)['data']
 pos, neg = sentiment.get_results(data)
 
 q_params = {'inputs': {
