@@ -4,3 +4,4 @@ __pycache__
 tweets.txt
 *.swp
 BEARER_TOKENS
+twitter-feed
