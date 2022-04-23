@@ -19,7 +19,7 @@ def clean_data(data):
 
 def get_results(data):
 	data = clean_data(data)
-	classifier = pipeline("sentiment-analysis")
+	classifier = pipeline(model="distilbert-base-uncased-finetuned-sst-2-english")
 	result = classifier([data[i]['text'] for i in range(len(data))])
 
 	pos_results, neg_results = [], []
