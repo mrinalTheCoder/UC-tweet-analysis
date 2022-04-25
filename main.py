@@ -1,9 +1,11 @@
 import twitter_search as ts
+from get_model_preds import get_preds
 import sentiment
 import requests
 from transformers import AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
+import numpy as np
 import json
 
 with open('BEARER_TOKENS') as f:
@@ -16,9 +18,9 @@ def query(payload):
 	response = requests.post(SENTENCE_SIMILARITY, headers=headers, json=payload)
 	return response.json()
 
-#data = ts.get_tweets(twitter_bearer)['data']
-with open('tweets.txt') as f:
-	data = json.load(f)['data']
+data = ts.get_tweets(twitter_bearer)['data']
+#with open('tweets.txt') as f:
+#	data = json.load(f)['data']
 pos, neg = sentiment.get_results(data)
 
 def mean_pooling(model_output, attention_mask):
@@ -48,6 +50,14 @@ sarcasm_score = [cosine_similarity(sarc_embeddings, i) for i in sentence_embeddi
 assert len(sarcasm_score) == len(pos)
 assert len(similarity_score) == len(pos)
 
+print("3 level filter")
 for i in range(len(pos)):
 	if similarity_score[i] >= 0.3 and sarcasm_score[i] <= 0.45:
 		print(pos[i])
+
+print()
+print("Trained model")
+preds = np.squeeze(get_preds(data))
+for i in range(len(preds)):
+	if preds[i] >= 0.5:
+		print(data[i])
