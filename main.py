@@ -1,27 +1,17 @@
-import twitter_search as ts
-from get_model_preds import get_preds
-import sentiment
-import requests
-from transformers import AutoTokenizer, AutoModel
+from transformers import pipeline, AutoTokenizer, AutoModel
 import torch
 import torch.nn.functional as F
-import numpy as np
+import sentiment
+import twitter_search as ts
 import json
+from tqdm import tqdm
 
 with open('BEARER_TOKENS') as f:
-	twitter_bearer, hf_bearer = f.read().split('\n')[:-1]
+	bearer = f.read().split('\n')[0]
 
-SENTENCE_SIMILARITY = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
-headers = {"Authorization": hf_bearer}
-
-def query(payload):
-	response = requests.post(SENTENCE_SIMILARITY, headers=headers, json=payload)
-	return response.json()
-
-data = ts.get_tweets(twitter_bearer)['data']
-#with open('tweets.txt') as f:
-#	data = json.load(f)['data']
-pos, neg = sentiment.get_results(data)
+classifier = pipeline(model="distilbert-base-uncased-finetuned-sst-2-english")
+tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
+model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
 
 def mean_pooling(model_output, attention_mask):
     token_embeddings = model_output[0] #First element of model_output contains all token embeddings
@@ -31,33 +21,49 @@ def mean_pooling(model_output, attention_mask):
 def cosine_similarity(a, b):
 	return torch.sum(a*b)/pow(torch.sum(torch.square(a))*torch.sum(torch.square(b)), 0.5)
 
-tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
-model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
-sentences = ["The service was excellent. The person was polite and professional", "Very happy with UC's terrible customer care."]
-sentences += [tweet['text'] for tweet in pos]
+def hf_query(ref_sentences, target_sentences):
+	sentences = ref_sentences + target_sentences
+	encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors='pt')
+	with torch.no_grad():
+		model_output = model(**encoded_input)
+	
+	sentence_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
+	ref_embeddings = sentence_embeddings[:len(ref_sentences)]
+	target_embeddings = sentence_embeddings[len(ref_sentences):]
 
-encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors='pt')
-with torch.no_grad():
-    model_output = model(**encoded_input)
+	sim_scores = [
+		[cosine_similarity(ref_embeddings[j], target_embeddings[i]) for j in range(len(ref_sentences))]
+	for i in range(len(target_sentences))]
+	return sim_scores
 
-sentence_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
-sim_embeddings, sarc_embeddings = sentence_embeddings[0], sentence_embeddings[1]
-sentence_embeddings = sentence_embeddings[2:]
+def main(data):
+	pos, neg = sentiment.get_results(data, classifier)
 
-similarity_score = [cosine_similarity(sim_embeddings, i) for i in sentence_embeddings]
-sarcasm_score = [cosine_similarity(sarc_embeddings, i) for i in sentence_embeddings]
+	similarities = hf_query([
+		"The service was excellent. The person was polite and professional",
+		"Impressed with safe and hygienic service. Every tool was sanitised."
+	], [i['text'] for i in pos])
+	
+	out_pos, out_neg = [], []
+	for i in range(len(pos)):
+		for j in range(len(similarities[0])):
+			if similarities[i][j] >= 0.3:
+				out_pos.append(pos[i])
+				break
+		else:
+			out_neg.append(pos[i])
+	out_neg.extend(neg)
+	return out_pos, out_neg
 
-assert len(sarcasm_score) == len(pos)
-assert len(similarity_score) == len(pos)
+with open('tweets.json') as f:
+	data = json.load(f)['data']
 
-print("3 level filter")
-for i in range(len(pos)):
-	if similarity_score[i] >= 0.3 and sarcasm_score[i] <= 0.45:
-		print(pos[i])
+#data = ts.get_tweets(bearer)['data']
+final_pos, final_neg = main(data)
+
+for i in range(len(final_pos)):
+	print(final_pos[i]['text'])
 
 print()
-print("Trained model")
-preds = np.squeeze(get_preds(data))
-for i in range(len(preds)):
-	if preds[i] >= 0.5:
-		print(data[i])
+for i in range(len(final_neg)):
+	print(final_neg[i]['text'])

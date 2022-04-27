@@ -1,5 +1,4 @@
 import json
-from transformers import pipeline
 
 # data is list of objects, with id, author_id, text attributes
 
@@ -17,9 +16,8 @@ def clean_data(data):
 		data[i]['text'] = ' '.join(new_l)
 	return data
 
-def get_results(data):
+def get_results(data, classifier):
 	data = clean_data(data)
-	classifier = pipeline(model="distilbert-base-uncased-finetuned-sst-2-english")
 	result = classifier([data[i]['text'] for i in range(len(data))])
 
 	pos_results, neg_results = [], []
@@ -27,11 +25,11 @@ def get_results(data):
 		temp = result[i]
 		temp['text'] = data[i]['text']
 		temp['id'] = data[i]['id']
-		temp['author'] = data[i]['author_id']
+		#temp['author'] = data[i]['author_id']
 		if temp['label'] == 'POSITIVE':
 			pos_results.append(temp)
 		else:
 			neg_results.append(temp)
-	pos_results = sorted(pos_results, reverse=True, key=lambda x:x['score'])
-	neg_results = sorted(neg_results, reverse=True, key=lambda x:x['score'])
+	#pos_results = sorted(pos_results, reverse=True, key=lambda x:x['score'])
+	#neg_results = sorted(neg_results, reverse=True, key=lambda x:x['score'])
 	return pos_results, neg_results

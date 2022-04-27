@@ -28,7 +28,7 @@ def connect_to_endpoint(url, params, bearer_token):
 
 def get_tweets(bearer):
 	out = connect_to_endpoint(search_url, query_params, bearer)
-	with open('tweets.txt', 'w') as f:
+	with open('tweets.json', 'w') as f:
 		json.dump(out, f)
 	return out
 

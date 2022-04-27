@@ -1,7 +1,7 @@
 .DS_Store
 .env
 __pycache__
-tweets.txt
+tweets.json
 *.swp
 BEARER_TOKENS
 twitter-feed
