@@ -55,10 +55,10 @@ def main(data):
 	out_neg.extend(neg)
 	return out_pos, out_neg
 
-with open('tweets.json') as f:
-	data = json.load(f)['data']
+#with open('tweets.json') as f:
+#	data = json.load(f)['data']
 
-#data = ts.get_tweets(bearer)['data']
+data = ts.get_tweets(bearer)['data']
 final_pos, final_neg = main(data)
 
 for i in range(len(final_pos)):
