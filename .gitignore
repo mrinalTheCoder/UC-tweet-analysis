@@ -5,4 +5,6 @@ tweets.json
 *.swp
 BEARER_TOKENS
 twitter-feed
+twitter-feed-long/*
+dataset-long.json
 fine-tuned
