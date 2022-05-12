@@ -28,14 +28,32 @@ def cosine_similarity(a, b):
 
 # returns (num_ref_sentences, num_target_sentences) 2d array of sim scores
 def hf_query(ref_sentences, target_sentences, tokenizer, model):
-    sentences = ref_sentences + target_sentences
-    encoded_input = tokenizer(sentences, padding=True, truncation=True, return_tensors='pt')
-    with torch.no_grad():
-        model_output = model(**encoded_input)
+    if 'embedding' not in ref_sentences[0]:
+        encoded_input = tokenizer(
+            [i['text'] for i in ref_sentences],
+            padding=True, truncation=True, return_tensors='pt'
+        )
+        with torch.no_grad():
+            model_output = model(**encoded_input)
 
-    sentence_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
-    ref_embeddings = sentence_embeddings[:len(ref_sentences)]
-    target_embeddings = sentence_embeddings[len(ref_sentences):]
+        ref_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
+        for i in range(len(ref_sentences)):
+            ref_sentences[i]['embedding'] = ref_embeddings[i]
+
+    if 'embedding' not in target_sentences[0]:
+        encoded_input = tokenizer([
+            i['text'] for i in target_sentences],
+            padding=True, truncation=True, return_tensors='pt'
+        )
+        with torch.no_grad():
+            model_output = model(**encoded_input)
+
+        target_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
+        for i in range(len(target_sentences)):
+            target_sentences[i]['embedding'] = target_embeddings[i]
+
+    ref_embeddings = [i['embedding'] for i in ref_sentences]
+    target_embeddings = [i['embedding'] for i in target_sentences]
 
     sim_scores = [
         [cosine_similarity(ref_embeddings[j], target_embeddings[i]) for j in range(len(ref_sentences))]
@@ -43,7 +61,7 @@ def hf_query(ref_sentences, target_sentences, tokenizer, model):
     return np.array(sim_scores)
 
 def iterate(refs, pos, tokenizer, model, NUM_REFS_PER_ITER, FINAL_THRESH):
-    sim_scores = hf_query([i['text'] for i in refs], [i['text'] for i in pos], tokenizer, model)
+    sim_scores = hf_query(refs, pos, tokenizer, model)
     sim_scores = np.average(sim_scores, axis=1)
     for i in range(len(pos)):
         current_score, new_score = pos[i]['score'], sim_scores[i]
@@ -76,7 +94,7 @@ def get_results(pos, NUM_ITERS=20):
         {'text': "Impressed with safe and hygienic service. Every tool was sanitised."}
     ]
 
-    sim_scores = hf_query([i['text'] for i in refs], [i['text'] for i in pos], tokenizer, model)
+    sim_scores = hf_query(refs, pos, tokenizer, model)
     sim_scores = np.average(sim_scores, axis=1)
     for i in range(len(pos)):
         pos[i]['score'] = sim_scores[i]
@@ -125,14 +143,17 @@ if __name__ == '__main__':
 
     print("<---------- REFERENCE SENTENCES ---------->")
     for i in all_refs:
+        del i['embedding']
         print(i)
 
     print()
     print("<---------- POSITIVE SENTENCES ---------->")
     for i in final_pos:
+        del i['embedding']
         print(i)
 
     print()
     print("<---------- NEGATIVE SENTENCES ---------->")
     for i in final_neg:
+        del i['embedding']
         print(i)
