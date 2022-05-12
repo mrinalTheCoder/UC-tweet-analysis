@@ -8,3 +8,5 @@ twitter-feed
 twitter-feed-long/*
 dataset-long.json
 fine-tuned
+sentiment_pos_tweets.json
+sentiment_neg_tweets.json
