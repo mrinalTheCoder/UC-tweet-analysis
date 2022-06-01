@@ -32,11 +32,7 @@ with open('dataset.json') as f:
 # with open('sentiment_neg_tweets.json') as f:
     # data.extend(json.load(f))
 
-final_pos, final_neg = [], []
-for i in tqdm(range(100), leave=False):
-    temp_pos, temp_neg = main(data[i*370:(i+1)*370])
-    final_pos.extend(temp_pos)
-    final_neg.extend(temp_neg)
+final_pos, final_neg = main(data)
 
 with open('positive_tweets.json', 'w') as out:
     json.dump(final_pos, out)

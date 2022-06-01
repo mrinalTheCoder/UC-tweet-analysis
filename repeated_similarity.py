@@ -1,4 +1,5 @@
 import json
+from tqdm import tqdm
 import random
 import sentiment
 import numpy as np
@@ -41,16 +42,21 @@ def hf_query(ref_sentences, target_sentences, tokenizer, model):
             ref_sentences[i]['embedding'] = ref_embeddings[i]
 
     if 'embedding' not in target_sentences[0]:
-        encoded_input = tokenizer([
-            i['text'] for i in target_sentences],
-            padding=True, truncation=True, return_tensors='pt'
-        )
-        with torch.no_grad():
-            model_output = model(**encoded_input)
+        for batch in tqdm(range(len(target_sentences)//200 + 1)):
+            target_slice = target_sentences[batch*200:(batch+1)*200]
+            if len(target_slice) == 0:
+                continue
+            encoded_input = tokenizer([
+                i['text'] for i in target_slice],
+                padding=True, truncation=True, return_tensors='pt'
+            )
+            with torch.no_grad():
+                model_output = model(**encoded_input)
 
-        target_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
-        for i in range(len(target_sentences)):
-            target_sentences[i]['embedding'] = target_embeddings[i]
+            target_embeddings = mean_pooling(model_output, encoded_input['attention_mask'])
+            for i in range(len(target_slice)):
+                target_slice[i]['embedding'] = target_embeddings[i]
+            target_sentences[batch*200:(batch+1)*200] = target_slice
 
     ref_embeddings = [i['embedding'] for i in ref_sentences]
     target_embeddings = [i['embedding'] for i in target_sentences]
