@@ -123,6 +123,10 @@ def get_results(pos, NUM_ITERS=20):
     thresh_idx = bin_search([i['score'] for i in pos], FINAL_THRESH, 0, len(pos)-1)
 
     final_pos, final_neg = pos[:thresh_idx], pos[thresh_idx:]
+    for i in all_refs+final_pos+final_neg:
+        del i['embedding']
+        del i['changed']
+        del i['score']
     return all_refs, final_pos, final_neg
 
     # classifier = pipeline(model="distilbert-base-uncased-finetuned-sst-2-english")

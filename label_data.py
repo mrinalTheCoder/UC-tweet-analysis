@@ -12,7 +12,12 @@ tokenizer = AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v
 model = AutoModel.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')
 
 def main(data):
-    pos, neg = sentiment.get_results(data, classifier)
+    pos, neg = [], []
+    for i in tqdm(range(100)):
+        out = sentiment.get_results(data[i*(len(data)//100):(i+1)*(len(data)//100)], classifier)
+        pos.extend(out[0])
+        neg.extend(out[1])
+
     # pos, neg = [], []
     # for i in data:
         # if i['label'] == 'POSITIVE':
@@ -20,7 +25,7 @@ def main(data):
         # else:
             # neg.append(i)
 
-    sim_refs, sim_pos, sim_neg = repeated_similarity.get_results(pos)
+    sim_refs, sim_pos, sim_neg = repeated_similarity.get_results(data)
     return sim_refs+sim_pos, neg+sim_neg
 
 with open('dataset.json') as f:
