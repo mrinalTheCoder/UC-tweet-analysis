@@ -25,7 +25,7 @@ def main(data):
         # else:
             # neg.append(i)
 
-    sim_refs, sim_pos, sim_neg = repeated_similarity.get_results(data)
+    sim_refs, sim_pos, sim_neg = repeated_similarity.get_results(pos)
     return sim_refs+sim_pos, neg+sim_neg
 
 with open('dataset.json') as f:
