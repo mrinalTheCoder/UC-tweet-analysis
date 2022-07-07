@@ -23,6 +23,7 @@ def mean_pooling(model_output, attention_mask):
     input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
     return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
 
+#calculate similarity score
 def cosine_similarity(a, b):
     temp = torch.sum(a*b)/pow(torch.sum(torch.square(a))*torch.sum(torch.square(b)), 0.5)
     return np.array(temp)
@@ -66,6 +67,7 @@ def hf_query(ref_sentences, target_sentences, tokenizer, model):
     for i in range(len(target_sentences))]
     return np.array(sim_scores)
 
+#use for Repeted Sampling algo, sort and random shuffle to get next sentence
 def iterate(refs, pos, tokenizer, model, NUM_REFS_PER_ITER, FINAL_THRESH):
     sim_scores = hf_query(refs, pos, tokenizer, model)
     sim_scores = np.average(sim_scores, axis=1)
@@ -101,13 +103,17 @@ def get_results(pos, NUM_ITERS=20):
     ]
 
     sim_scores = hf_query(refs, pos, tokenizer, model)
+    #sim_scores is 2-d array of similarity score of ith sentence with Jth sentence
     sim_scores = np.average(sim_scores, axis=1)
     for i in range(len(pos)):
         pos[i]['score'] = sim_scores[i]
 
     pos = sorted(pos, reverse=True, key= lambda x:x['score'])
-
+    
+    #Repeated Sampling Alogo
+    
     all_refs = []
+    #list of sentences that are refrence sentence in all interations
     for i in range(NUM_ITERS):
         refs, pos = iterate(refs, pos, tokenizer, model, NUM_REFS_PER_ITER, FINAL_THRESH)
         all_refs.extend(refs)
@@ -129,41 +135,32 @@ def get_results(pos, NUM_ITERS=20):
         del i['score']
     return all_refs, final_pos, final_neg
 
-    # classifier = pipeline(model="distilbert-base-uncased-finetuned-sst-2-english")
-    # orig_scores = [i['score'] for i in pos[thresh_idx-10:thresh_idx+10]]
-    # temp, _ = sentiment.get_results(pos[thresh_idx-10:thresh_idx+10], classifier)
-    # for i in range(len(temp)):
-        # temp[i]['orig_score'] = orig_scores[i]
-        # del temp[i]['label']
 
-    # temp = sorted(temp, reverse=True, key=lambda x:x['score'])
-    # for i in temp:
-        # i['score'] = i['orig_score']
-        # del i['orig_score']
-    # pos[thresh_idx-10:thresh_idx+10] = temp
+# debugging for Repeated Sampling Algo
+#--------------------------------------------
+# if _name_ == '_main_':
+#     with open('sentiment_pos_tweets.json') as f:
+#         data = json.load(f)
+#     for i in data:
+#         i['changed'] = False
+#         del i['label']
+#         del i['score']
+#     all_refs, final_pos, final_neg = get_results(data)
 
-if __name__ == '__main__':
-    with open('sentiment_pos_tweets.json') as f:
-        data = json.load(f)
-    for i in data:
-        i['changed'] = False
-        del i['label']
-        del i['score']
-    all_refs, final_pos, final_neg = get_results(data)
+#     print("<---------- REFERENCE SENTENCES ---------->")
+#     for i in all_refs:
+#         del i['embedding']
+#         print(i)
 
-    print("<---------- REFERENCE SENTENCES ---------->")
-    for i in all_refs:
-        del i['embedding']
-        print(i)
+#     print()
+#     print("<---------- POSITIVE SENTENCES ---------->")
+#     for i in final_pos:
+#         del i['embedding']
+#         print(i)
 
-    print()
-    print("<---------- POSITIVE SENTENCES ---------->")
-    for i in final_pos:
-        del i['embedding']
-        print(i)
-
-    print()
-    print("<---------- NEGATIVE SENTENCES ---------->")
-    for i in final_neg:
-        del i['embedding']
-        print(i)
+#     print()
+#     print("<---------- NEGATIVE SENTENCES ---------->")
+#     for i in final_neg:
+#         del i['embedding']
+#         print(i)
+#--------------------------------------------

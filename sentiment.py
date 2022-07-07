@@ -1,7 +1,7 @@
 import json
 
 # data is list of objects, with id, author_id, text attributes
-
+#clean tweets spaces , # etc
 def clean_data(data):
 	for i in range(len(data)):
 		data[i]['text'] = data[i]['text'].replace('\n', ' ')
@@ -16,6 +16,7 @@ def clean_data(data):
 		data[i]['text'] = ' '.join(new_l)
 	return data
 
+#bert model 
 def get_results(data, classifier):
 	data = clean_data(data)
 	result = classifier([data[i]['text'] for i in range(len(data))])
